@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffc4d8" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ctext y=%2726%27 font-size=%2726%27%3E%F0%9F%8E%82%3C/text%3E%3C/svg%3E" />
+  <title>For Shaguftha</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&family=Pinyon+Script&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <!-- Scroll track: its height is what the whole story is scrubbed against -->
+  <main id="track" aria-label="A birthday surprise for Shaguftha"></main>
+
+  <div id="stage">
+    <div id="backdrop"></div>
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <div id="bloom"></div>
+
+    <!-- Curly flourishes in the four corners. Each path draws itself on scroll. -->
+    <svg class="flourish tl" viewBox="0 0 220 220" aria-hidden="true">
+      <path class="curl" d="M8 212 C8 120 40 52 112 34 C150 25 186 40 178 68 C171 92 134 86 138 62 C141 44 164 48 160 62" />
+      <path class="curl" d="M8 150 C14 112 36 84 66 74 C84 68 100 78 94 92 C89 103 72 99 75 88" />
+      <path class="curl" d="M40 212 C42 176 58 150 84 140" />
+    </svg>
+    <svg class="flourish tr" viewBox="0 0 220 220" aria-hidden="true">
+      <path class="curl" d="M8 212 C8 120 40 52 112 34 C150 25 186 40 178 68 C171 92 134 86 138 62 C141 44 164 48 160 62" />
+      <path class="curl" d="M8 150 C14 112 36 84 66 74 C84 68 100 78 94 92 C89 103 72 99 75 88" />
+      <path class="curl" d="M40 212 C42 176 58 150 84 140" />
+    </svg>
+    <svg class="flourish bl" viewBox="0 0 220 220" aria-hidden="true">
+      <path class="curl" d="M8 212 C8 120 40 52 112 34 C150 25 186 40 178 68 C171 92 134 86 138 62 C141 44 164 48 160 62" />
+      <path class="curl" d="M8 150 C14 112 36 84 66 74 C84 68 100 78 94 92 C89 103 72 99 75 88" />
+      <path class="curl" d="M40 212 C42 176 58 150 84 140" />
+    </svg>
+    <svg class="flourish br" viewBox="0 0 220 220" aria-hidden="true">
+      <path class="curl" d="M8 212 C8 120 40 52 112 34 C150 25 186 40 178 68 C171 92 134 86 138 62 C141 44 164 48 160 62" />
+      <path class="curl" d="M8 150 C14 112 36 84 66 74 C84 68 100 78 94 92 C89 103 72 99 75 88" />
+      <path class="curl" d="M40 212 C42 176 58 150 84 140" />
+    </svg>
+
+    <!-- Story beats. Opacity and position are driven by the GSAP timeline. -->
+    <section class="beat" id="b-arrive">
+      <p class="script big">for Shaguftha</p>
+      <p class="serif">scroll slowly, something is waiting</p>
+    </section>
+
+    <section class="beat" id="b-candle">
+      <p class="script mid">one little candle</p>
+    </section>
+
+    <section class="beat" id="b-flame">
+      <p class="script mid">a flame, just for you</p>
+    </section>
+
+    <section class="beat" id="b-wish">
+      <p class="script mid">close your eyes</p>
+      <p class="serif">make a wish, then blow</p>
+    </section>
+
+    <!-- Blow control: appears when the wish arrives, scroll is held until the candle is out -->
+    <div id="blow-ui" data-state="ask">
+      <button id="mic-btn" type="button">Allow microphone</button>
+      <div class="meter-wrap">
+        <div class="meter" role="meter" aria-label="Blow strength" aria-valuemin="0" aria-valuemax="100">
+          <div id="meter-fill"></div>
+          <span class="tick" style="left:55%"></span>
+        </div>
+        <svg class="meter-curl l" viewBox="0 0 40 40" aria-hidden="true"><path d="M38 20 C30 20 28 8 18 8 C8 8 4 18 10 24 C15 29 24 25 21 18 C19 14 14 16 16 19" /></svg>
+        <svg class="meter-curl r" viewBox="0 0 40 40" aria-hidden="true"><path d="M38 20 C30 20 28 8 18 8 C8 8 4 18 10 24 C15 29 24 25 21 18 C19 14 14 16 16 19" /></svg>
+      </div>
+      <p id="blow-hint" class="serif" aria-live="polite"></p>
+      <button id="skip-btn" type="button" class="link">Can't blow? Tap to blow it out</button>
+    </div>
+
+    <section class="beat" id="b-dark">
+      <p class="serif dim">scroll once more</p>
+    </section>
+
+    <!-- The reveal -->
+    <section class="beat" id="b-reveal">
+      <p class="script hb">Happy Birthday</p>
+      <p class="script name">Shaguftha</p>
+      <svg class="underswirl" viewBox="0 0 420 50" aria-hidden="true">
+        <path class="curl" d="M6 30 C60 6 110 6 160 26 S250 48 300 26 S376 4 414 24 C400 38 384 36 388 26" />
+      </svg>
+      <p class="serif wish">may every wish you just made come true</p>
+    </section>
+
+    <div id="petals" aria-hidden="true"></div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

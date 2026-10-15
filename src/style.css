@@ -1,0 +1,249 @@
+:root {
+  --petal: #ffe3ec;
+  --baby: #ffc4d8;
+  --rose: #e8548a;
+  --deep: #a81f55;
+  --plum: #12050c;
+  --gold: #ffc76b;
+  --ink: #6d1238;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { background: var(--bg-b, #ffb3cd); }
+body {
+  background: transparent;
+  color: var(--ink);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#track { height: 560vh; } /* resized by main.js */
+
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* The backdrop colour is animated from JS via --bg-a / --bg-b (light -> dark) */
+#backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 50% 38%, var(--bg-a, #ffe3ec) 0%, var(--bg-b, #ffb3cd) 100%);
+}
+
+#scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- curly flourishes ---------- */
+.flourish {
+  position: absolute;
+  width: clamp(110px, 20vw, 240px);
+  height: auto;
+  fill: none;
+  stroke: var(--rose);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  opacity: 0.85;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,.55));
+}
+.flourish.tl { top: 2vmin; left: 2vmin; }
+.flourish.tr { top: 2vmin; right: 2vmin; transform: scaleX(-1); }
+.flourish.bl { bottom: 2vmin; left: 2vmin; transform: scaleY(-1); }
+.flourish.br { bottom: 2vmin; right: 2vmin; transform: scale(-1, -1); }
+
+/* ---------- type ---------- */
+.beat {
+  position: absolute;
+  left: 0; right: 0;
+  padding: 0 24px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+}
+.script {
+  font-family: 'Pinyon Script', cursive;
+  font-weight: 400;
+  color: var(--deep);
+  line-height: 1.05;
+  text-shadow: 0 2px 0 rgba(255,255,255,.7), 0 10px 30px rgba(232,84,138,.25);
+}
+.script.big { font-size: clamp(3.4rem, 11vw, 8.5rem); }
+.script.mid { font-size: clamp(2.4rem, 7vw, 5rem); }
+.serif {
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.15rem, 2.6vw, 1.7rem);
+  letter-spacing: .02em;
+  color: var(--ink);
+  max-width: 34ch;
+  margin: .6rem auto 0;
+  line-height: 1.5;
+}
+
+/* beats sit above the cake, bottom beats sit below it */
+#b-arrive { top: 7vh; }
+#b-candle, #b-flame, #b-wish { top: 5vh; }
+#b-dark { top: 16vh; }
+#b-dark .serif { color: #ffd1e1; opacity: .75; }
+
+
+/* ---------- blow control ---------- */
+#blow-ui {
+  position: absolute;
+  left: 50%;
+  bottom: max(3vh, 16px);
+  width: min(420px, 92vw);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .55rem;
+  padding: 1rem 2rem 1.1rem;
+  border-radius: 28px;
+  background: rgba(255, 244, 248, .78);
+  border: 1.5px solid rgba(232, 84, 138, .45);
+  box-shadow: 0 14px 40px rgba(168, 31, 85, .28);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .6s ease;
+}
+#blow-ui.on { opacity: 1; pointer-events: auto; }
+
+#mic-btn {
+  font: italic 500 clamp(1.2rem, 3vw, 1.5rem) 'Cormorant Garamond', Georgia, serif;
+  color: #fff;
+  background: linear-gradient(180deg, var(--rose), var(--deep));
+  border: 0;
+  border-radius: 999px;
+  padding: .7em 1.9em;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(255,255,255,.5) inset, 0 10px 28px rgba(168,31,85,.4);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+#mic-btn:hover { transform: translateY(-2px); }
+#mic-btn:disabled { opacity: .6; cursor: default; transform: none; }
+
+.meter-wrap { position: relative; order: 1; width: min(260px, 62vw); margin: .3rem 0; }
+#blow-hint { order: 2; }
+#mic-btn { order: 3; }
+#skip-btn { order: 4; }
+.meter {
+  position: relative;
+  height: 24px;
+  border: 2px solid var(--rose);
+  border-radius: 999px;
+  background: rgba(255,255,255,.6);
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(168,31,85,.2);
+}
+#meter-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--baby), var(--rose) 60%, var(--deep));
+  border-radius: 999px;
+}
+.tick {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 3px;
+  margin-left: -1px;
+  background: var(--deep);
+  opacity: .55;
+}
+#blow-ui.over .tick { opacity: 1; box-shadow: 0 0 10px 2px var(--gold); }
+.meter-curl {
+  position: absolute;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  margin-top: -17px;
+  fill: none;
+  stroke: var(--rose);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.meter-curl.l { left: -40px; }
+.meter-curl.r { right: -40px; transform: scaleX(-1); }
+
+#blow-hint { margin: 0; min-height: 1.5em; }
+#skip-btn.link {
+  font: italic 500 1rem 'Cormorant Garamond', Georgia, serif;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  opacity: .8;
+}
+
+/* what shows in each state */
+#blow-ui[data-state="ask"] #skip-btn,
+#blow-ui[data-state="listening"] :is(#mic-btn, #skip-btn),
+#blow-ui[data-state="listening-stuck"] #mic-btn,
+#blow-ui[data-state="denied"] :is(#mic-btn, .meter-wrap) { display: none; }
+
+/* ---------- reveal ---------- */
+#bloom {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 50% 50%, #ffffff 0%, #fff4f8 28%, #ffd3e2 62%, #ffb0cb 100%);
+  clip-path: circle(0% at 50% 50%);
+}
+
+#b-reveal {
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.script.hb { font-size: clamp(3rem, 10vw, 7rem); color: var(--rose); }
+.script.name {
+  font-size: clamp(5rem, 22vw, 17rem);
+  line-height: .9;
+  color: var(--deep);
+  padding: 0 .1em;
+}
+.underswirl {
+  width: clamp(220px, 46vw, 460px);
+  fill: none;
+  stroke: var(--rose);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  margin-top: .8rem;
+}
+.wish { margin-top: 1.4rem; max-width: 40ch; text-wrap: balance; }
+
+#petals { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.petal {
+  position: absolute;
+  top: -8vh;
+  width: 14px; height: 18px;
+  background: radial-gradient(circle at 30% 30%, #fff 0%, var(--baby) 45%, var(--rose) 100%);
+  border-radius: 80% 0 80% 0;
+  opacity: 0;
+  will-change: transform;
+}
+
+:focus-visible { outline: 2px solid var(--deep); outline-offset: 3px; }
+
+@media (max-width: 600px) {
+  #b-arrive, #b-candle, #b-flame, #b-wish { top: 11vh; }
+}
+
+
