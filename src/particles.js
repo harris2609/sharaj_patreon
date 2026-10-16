@@ -59,12 +59,12 @@ export class Smoke {
 
 // A slow cloud of glints around the cake. Colour is tinted per point.
 export class Glints {
-  constructor(parent, count = 140) {
+  constructor(parent, count = 140, colors = ['#ffffff', '#ffd0e0', '#ff8fb4', '#ffc76b']) {
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(count * 3);
     const col = new Float32Array(count * 3);
     this.seed = new Float32Array(count * 3);
-    const palette = ['#ffffff', '#ffd0e0', '#ff8fb4', '#ffc76b'].map((c) => new THREE.Color(c));
+    const palette = colors.map((c) => new THREE.Color(c));
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const r = 2.4 + Math.random() * 3.2;

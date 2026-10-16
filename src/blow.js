@@ -66,10 +66,14 @@ class BlowDetector {
   }
 }
 
+// Press-and-hold fallback: holding the button ramps the level like a breath,
+// so it works with no microphone at all and still uses the same hold timer.
+const HOLD_RAMP = 1.6; // level per second while held
+
 export function createBlowGame({ onBlown }) {
   const ui = document.getElementById('blow-ui');
   const micBtn = document.getElementById('mic-btn');
-  const skipBtn = document.getElementById('skip-btn');
+  const holdBtn = document.getElementById('hold-btn');
   const fill = document.getElementById('meter-fill');
   const hint = document.getElementById('blow-hint');
   const wishLine = document.querySelector('#b-wish .serif');
@@ -80,14 +84,14 @@ export function createBlowGame({ onBlown }) {
   let hold = 0;
   let level = 0;
   let fake = null;
-  let triedFor = 0;
+  let holding = false;
 
   const setState = (s) => {
     state = s;
     ui.dataset.state = s;
   };
   setState('ask');
-  hint.textContent = 'allow the microphone, then blow';
+  hint.textContent = 'allow the microphone and blow, or press and hold';
 
   const finish = () => {
     if (blown) return;
@@ -110,11 +114,22 @@ export function createBlowGame({ onBlown }) {
       wishLine.textContent = 'blow into your microphone';
       hint.textContent = 'getting ready…';
     } catch {
-      hint.textContent = 'No microphone, no problem.';
+      hint.textContent = 'No microphone, no problem. Press and hold instead.';
       setState('denied');
     }
   });
-  skipBtn.addEventListener('click', finish);
+
+  const release = () => { holding = false; };
+  holdBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    holdBtn.setPointerCapture?.(e.pointerId);
+    holding = true;
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) holdBtn.addEventListener(ev, release);
+  holdBtn.addEventListener('contextmenu', (e) => e.preventDefault()); // long-press menu on phones
+  holdBtn.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); holding = true; } });
+  holdBtn.addEventListener('keyup', release);
+  holdBtn.addEventListener('blur', release);
 
   // Local testing only: window.__blow.setLevel(0..1) stands in for the microphone.
   if (import.meta.env.DEV) {
@@ -134,20 +149,22 @@ export function createBlowGame({ onBlown }) {
     setVisible(on) {
       if (!blown) ui.classList.toggle('on', on);
     },
-    // 0..1 strength of the current breath, for the flame to lean on.
+    // 0..1 strength of the current breath (or hold), for the flame to lean on.
     get breath() {
-      return state === 'listening' && !blown ? level : 0;
+      return blown ? 0 : level;
     },
     update(dt) {
-      if (blown || state !== 'listening' || !ui.classList.contains('on')) return;
+      if (blown || !ui.classList.contains('on')) return;
 
-      if (fake !== null) {
+      if (holding) {
+        level = Math.min(1, level + HOLD_RAMP * dt);
+      } else if (fake !== null) {
         level += (fake - level) * 0.4;
-      } else if (detector.calibrating) {
-        detector.update();
-        return;
-      } else {
+      } else if (state === 'listening' && !detector.calibrating) {
         level = detector.update();
+      } else {
+        if (state === 'listening') detector.update(); // still calibrating
+        level = Math.max(0, level - dt * 2.5);
       }
 
       fill.style.width = `${Math.round(level * 100)}%`;
@@ -156,12 +173,11 @@ export function createBlowGame({ onBlown }) {
       hold = level >= THRESHOLD ? hold + dt : Math.max(0, hold - dt * 1.5);
       if (hold >= HOLD) return finish();
 
-      if (level >= THRESHOLD) hint.textContent = 'keep going!';
+      if (holding) hint.textContent = 'keep holding…';
+      else if (state !== 'listening') return;
+      else if (level >= THRESHOLD) hint.textContent = 'keep going!';
       else if (level > 0.12) hint.textContent = 'a little harder…';
-      else hint.textContent = 'take a deep breath, then blow';
-
-      triedFor += dt;
-      if (triedFor > 20) ui.dataset.state = 'listening-stuck'; // reveal the tap fallback
+      else hint.textContent = 'take a deep breath and blow, or press and hold';
     },
   };
 }

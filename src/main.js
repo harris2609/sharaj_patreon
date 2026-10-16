@@ -5,6 +5,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { buildCake } from './cake.js';
 import { Smoke, Glints } from './particles.js';
 import { createBlowGame } from './blow.js';
+import { Ambient } from './audio.js';
+import { Lightbox } from './lightbox.js';
+import { PromiseCards } from './promises.js';
+import { Journey } from './journey.js';
+import { Guide } from './guide.js';
 
 gsap.registerPlugin(ScrollTrigger);
 history.scrollRestoration = 'manual';
@@ -25,7 +30,7 @@ const scene = new THREE.Scene();
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 80);
+const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 400);
 
 const hemi = new THREE.HemisphereLight('#fff0f5', '#ffb3cd', 0.9);
 const key = new THREE.DirectionalLight('#fff4ec', 2.4);
@@ -55,43 +60,64 @@ const S = {
   lean: 0,        // flame bending away from the breath
   puff: 0,        // drives smoke emission
   dark: 0,        // 0 = bright pink world, 1 = lights out
-  camZ: 9.4, camY: 3.4, lookY: 1.5,
+  brand: 0,       // 0 = birthday pink, 1 = sha2.life sky blue
+  cakeDrop: 0,    // 1 = cake sunk out of view
+  camZ: 9.4, camY: 3.4, lookY: 1.5, lookZ: 0,
   spin: 0.32,
+  bgA: new THREE.Color('#2a1c14'), bgB: new THREE.Color('#120c09'),
 };
 
 const LIGHT_A = new THREE.Color('#ffe3ec'), DARK_A = new THREE.Color('#2b0a1a');
 const LIGHT_B = new THREE.Color('#ffb3cd'), DARK_B = new THREE.Color('#0f0309');
 const tmpA = new THREE.Color(), tmpB = new THREE.Color();
 const tipPos = new THREE.Vector3();
+const look = new THREE.Vector3();
 let lastPuff = 0;
+
+const audio = new Ambient(document.getElementById('music-btn'));
+const lightbox = new Lightbox(audio);
+const promises = new PromiseCards(audio);
+const journey = new Journey({ scene, camera, S, audio, lightbox, promises });
 
 /* -------------------------------------------------- the wish: scroll is held
    Scrolling stops at LOCK (just before the flame starts to lean) until the
    candle is blown out. blowOut() then plays the blow-out by scrolling the page
    itself, so the same timeline drives it forwards, backwards and live. */
-const T_END = 110, T_LOCK = 75.4, T_DARK_REST = 91, SCROLL_VH = 6.8;
-const scrollAt = (time) => (time / T_END) * innerHeight * SCROLL_VH; // timeline second -> px
+let T_END = 110;
+const T_LOCK = 75.4, T_DARK_REST = 91, T_REVEAL = 102, SCROLL_VH_PER_S = 6.8 / 110;
+const scrollAt = (time) => time * innerHeight * SCROLL_VH_PER_S; // timeline second -> px
+const timeAt = (px) => px / (innerHeight * SCROLL_VH_PER_S);
 const track = document.getElementById('track');
 let locked = true;
+let twinkled = false;
 
 // While locked the page is physically too short to scroll past the wish, so no
 // device (wheel, touch momentum, keyboard End) can skip it.
 function sizeTrack() {
   track.style.height = `${scrollAt(locked ? T_LOCK : T_END) + innerHeight}px`;
 }
-sizeTrack();
 
 const blow = createBlowGame({ onBlown: blowOut });
+const guide = new Guide({ scrollAt, timeAt, isLocked: () => locked });
 
 function onScroll() {
-  blow.setVisible(scrollY > scrollAt(T_LOCK) - 160);
+  const time = timeAt(scrollY);
+  const atWish = scrollY > scrollAt(T_LOCK) - 160;
+  blow.setVisible(atWish);
+  guide.setBlocked((locked && atWish) || lightbox.open);
+  journey.onTime(time);
+  if (!twinkled && time > T_REVEAL) { twinkled = true; audio.twinkle(); }
 }
 addEventListener('scroll', onScroll, { passive: true });
 addEventListener('resize', () => { sizeTrack(); onScroll(); });
+lightbox.onChange = () => onScroll(); // re-evaluate the guide when the viewer opens or closes
 
 function blowOut() {
   locked = false;
   sizeTrack();
+  guide.setBlocked(false);
+  audio.startPad();
+  journey.preload();
   const p = { y: scrollY };
   gsap.to(p, {
     y: scrollAt(T_DARK_REST),
@@ -106,9 +132,45 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  journey.resize(camera.aspect);
 }
 addEventListener('resize', resize);
 resize();
+
+/* ---------------------------------------------------------------- taps
+   A short press with no drag is a tap; scrolling by touch never counts. */
+let press = null;
+canvas.addEventListener('pointerdown', (e) => { press = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!press || S.brand < 0.9) return;
+  const moved = Math.hypot(e.clientX - press.x, e.clientY - press.y);
+  if (moved < 8 && performance.now() - press.t < 400) {
+    journey.tap((e.clientX / innerWidth) * 2 - 1, -((e.clientY / innerHeight) * 2 - 1));
+  }
+  press = null;
+});
+
+/* ---------------------------------------------------------------- camera
+   The cake shots keep their hand-tuned framing; the journey pulls straight back
+   from its look-at point. Narrow screens get more distance either way. */
+const pointer = new THREE.Vector2();
+function placeCamera() {
+  const a = camera.aspect;
+  const fit = a < 1 ? 1 + (1 - a) * 1.25 : 1;
+  const b = S.brand;
+  pointer.lerp(journey.pointer, 0.04);
+
+  const cakeY = S.camY * (0.8 + 0.2 * fit), cakeZ = S.camZ * fit;
+  // portrait: pull back for width, and look lower so the cards sit up under the headline
+  const narrow = a < 1 ? 1 - a : 0;
+  const jFit = 1 + narrow * 0.9;
+  const drop = narrow * 1.3 * b;
+  const jY = S.lookY + (S.camY - S.lookY) * jFit - drop, jZ = S.lookZ + (S.camZ - S.lookZ) * jFit;
+
+  camera.position.set(pointer.x * 0.5 * b, THREE.MathUtils.lerp(cakeY, jY, b) + pointer.y * 0.3 * b, THREE.MathUtils.lerp(cakeZ, jZ, b));
+  look.set(0, S.lookY - drop, S.lookZ * b);
+  camera.lookAt(look);
+}
 
 let last = performance.now();
 let t = 0;
@@ -118,6 +180,8 @@ renderer.setAnimationLoop((now) => {
   t += dt;
 
   cake.rotation.y += dt * S.spin;
+  root.position.y = -S.cakeDrop * 16;
+  root.visible = S.cakeDrop < 0.98;
 
   // candle + flame
   candle.position.y = topY + S.lift;
@@ -143,24 +207,22 @@ renderer.setAnimationLoop((now) => {
   smoke.update(dt);
   blow.update(dt);
 
-  // lights-out
-  const d = S.dark;
+  // lights-out, then the brand palette takes over
+  const d = S.dark, b = S.brand;
   scene.environmentIntensity = 0.6 * (1 - 0.96 * d);
   hemi.intensity = 0.9 * (1 - 0.97 * d);
   key.intensity = 2.4 * (1 - 0.97 * d);
   rim.intensity = 1.4 * (1 - 0.75 * d);
-  tmpA.copy(LIGHT_A).lerp(DARK_A, d);
-  tmpB.copy(LIGHT_B).lerp(DARK_B, d);
-  document.documentElement.style.setProperty('--bg-a', '#' + tmpA.getHexString());
-  document.documentElement.style.setProperty('--bg-b', '#' + tmpB.getHexString());
+  tmpA.copy(LIGHT_A).lerp(DARK_A, d).lerp(S.bgA, b);
+  tmpB.copy(LIGHT_B).lerp(DARK_B, d).lerp(S.bgB, b);
+  const html = document.documentElement;
+  html.style.setProperty('--bg-a', '#' + tmpA.getHexString());
+  html.style.setProperty('--bg-b', '#' + tmpB.getHexString());
+  html.classList.toggle('brand', b > 0.5);
 
-  glints.update(t, reduceMotion ? 0 : 1 - d);
-
-  // camera (pulled back on narrow screens so the cake always fits)
-  const fit = camera.aspect < 1 ? 1 + (1 - camera.aspect) * 1.25 : 1;
-  camera.position.set(0, S.camY * (0.8 + 0.2 * fit), S.camZ * fit);
-  camera.lookAt(0, S.lookY, 0);
-
+  glints.update(t, reduceMotion ? 0 : (1 - d) * (1 - b));
+  journey.update(dt, t);
+  placeCamera();
   renderer.render(scene, camera);
 });
 
@@ -196,7 +258,8 @@ if (!reduceMotion) {
 }
 
 /* --------------------------------------------------------------- timeline
-   One scrubbed timeline, 110 "seconds" long, mapped onto the page scroll. */
+   One scrubbed timeline mapped onto the page scroll: the cake up to 110, the
+   journey after it. */
 gsap.set('#b-arrive', { opacity: 1 });
 // opening moment: the corner curls draw themselves once, on load
 gsap.to('.flourish .curl', { strokeDashoffset: 0, duration: 2.4, stagger: 0.15, ease: 'power2.inOut', delay: 0.3 });
@@ -257,4 +320,8 @@ tl.fromTo('.name', { scale: 0.82, opacity: 0 }, { scale: 1, opacity: 1, duration
 tl.to('.underswirl .curl', { strokeDashoffset: 0, duration: 4, ease: 'power1.inOut' }, 105);
 tl.fromTo('.wish', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 3, ease: 'power2.out' }, 107);
 tl.to(petalHost, { opacity: 1, duration: 3 }, 104);
-tl.to({}, { duration: 1 }, 109); // pad the end so the reveal rests before the page does
+
+// 113-306 The journey: the world turns sky-blue and the chapters fly past
+T_END = journey.schedule(tl, fadeIn, fadeOut);
+sizeTrack();
+ScrollTrigger.refresh();

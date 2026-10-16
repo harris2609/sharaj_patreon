@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#ffc4d8" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ctext y=%2726%27 font-size=%2726%27%3E%F0%9F%8E%82%3C/text%3E%3C/svg%3E" />
-  <title>For Shaguftha</title>
+  <title>For Shagufta · sha2.life</title>
+  <meta name="robots" content="noindex, nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&family=Pinyon+Script&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&family=Pinyon+Script&family=Outfit:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
   <!-- Scroll track: its height is what the whole story is scrubbed against -->
-  <main id="track" aria-label="A birthday surprise for Shaguftha"></main>
+  <main id="track" aria-label="A birthday surprise for Shagufta"></main>
 
   <div id="stage">
     <div id="backdrop"></div>
@@ -44,7 +45,7 @@
 
     <!-- Story beats. Opacity and position are driven by the GSAP timeline. -->
     <section class="beat" id="b-arrive">
-      <p class="script big">for Shaguftha</p>
+      <p class="script big">for Shagufta</p>
       <p class="serif">scroll slowly, something is waiting</p>
     </section>
 
@@ -73,7 +74,7 @@
         <svg class="meter-curl r" viewBox="0 0 40 40" aria-hidden="true"><path d="M38 20 C30 20 28 8 18 8 C8 8 4 18 10 24 C15 29 24 25 21 18 C19 14 14 16 16 19" /></svg>
       </div>
       <p id="blow-hint" class="serif" aria-live="polite"></p>
-      <button id="skip-btn" type="button" class="link">Can't blow? Tap to blow it out</button>
+      <button id="hold-btn" type="button">press &amp; hold to blow</button>
     </div>
 
     <section class="beat" id="b-dark">
@@ -83,14 +84,48 @@
     <!-- The reveal -->
     <section class="beat" id="b-reveal">
       <p class="script hb">Happy Birthday</p>
-      <p class="script name">Shaguftha</p>
+      <p class="script name">Shagufta</p>
       <svg class="underswirl" viewBox="0 0 420 50" aria-hidden="true">
         <path class="curl" d="M6 30 C60 6 110 6 160 26 S250 48 300 26 S376 4 414 24 C400 38 384 36 388 26" />
       </svg>
       <p class="serif wish">may every wish you just made come true</p>
     </section>
 
+    <!-- Chapter beats (2018 → Chennai) are generated from src/story.js and inserted here -->
+
+    <section class="beat" id="b-promises">
+      <p class="script mid sky">a few promises</p>
+      <p class="serif light">tap a card</p>
+      <div id="promise-grid"></div>
+    </section>
+
+    <section class="beat" id="b-finale">
+      <img class="logo" src="/logo.png" alt="SHA² · sha2.life" />
+      <p class="headline"></p>
+      <p class="sub"></p>
+      <a class="go" target="_blank" rel="noopener"></a>
+    </section>
+
     <div id="petals" aria-hidden="true"></div>
+  </div>
+
+  <!-- Guided assistance: appears when she pauses, says what to do, "next" scrolls for her -->
+  <div id="guide" role="status" aria-live="polite">
+    <svg class="guide-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+    <span class="guide-text"></span>
+    <button class="guide-next" type="button">next →</button>
+  </div>
+
+  <button id="music-btn" type="button" aria-label="Toggle music">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="16.5" cy="16" r="2.5" /></svg>
+  </button>
+
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Photo">
+    <figure>
+      <img alt="" />
+      <figcaption class="caption"></figcaption>
+    </figure>
+    <p class="close-hint">tap anywhere to close</p>
   </div>
 
   <script type="module" src="/src/main.js"></script>
